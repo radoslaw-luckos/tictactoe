@@ -35,9 +35,9 @@ typedef struct {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MINEFIELD_SIZE 3
+#define BOARD_SIZE 3
 // Square size in pixels:
-#define SQUARE_SIZE 240/MINEFIELD_SIZE
+#define SQUARE_SIZE 240/BOARD_SIZE
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -48,17 +48,14 @@ typedef struct {
  RTC_HandleTypeDef hrtc;
 
 /* USER CODE BEGIN PV */
-// An array representing a minefield. '0' means area is clear and '1' denotes mines:
-uint8_t minefield[MINEFIELD_SIZE][MINEFIELD_SIZE] = {{0}};
-// An array for storing mine numbers in adjacent fields:
-uint8_t mine_numbers[MINEFIELD_SIZE][MINEFIELD_SIZE] = {{0}};
+// An array representing a gamefield. '0' means area is clear and '1' denotes mines:
+uint8_t gamefield[BOARD_SIZE][BOARD_SIZE] = {{0}};
 // Array 'visited' keeps track of visited fields:
-uint8_t visited[MINEFIELD_SIZE][MINEFIELD_SIZE] = {{0}};
+uint8_t visited[BOARD_SIZE][BOARD_SIZE] = {{0}};
 // 'fields_to_visit' keeps track of the number of fields left to visit:
-uint16_t fields_to_visit = MINEFIELD_SIZE*MINEFIELD_SIZE;
+uint16_t fields_to_visit = BOARD_SIZE*BOARD_SIZE;
 // A variable for storing current minesweeper position:
 Coordinates players_position;
-uint8_t second_passed = 0;
 // A variable for tracking game status. '0' -- game running, '1' -- player 1, '2' -- player 2, '3' -- draw:
 uint8_t game_status = 0;
 uint8_t active_player = 1;
@@ -71,19 +68,13 @@ static void MX_RTC_Init(void);
 int8_t ADC1_Init(void);
 uint32_t Get_Seed_Value(void);
 void Game_Setup(void);
-void Update_Time(void);
-void display_time(uint8_t* time_table);
 void Move_Up(void);
 void Move_Down(void);
 void Move_Left(void);
 void Move_Right(void);
 void Mark_Field(void);
 void Game_Over(void);
-uint16_t Calculate_Score(void);
 void Draw_Square(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint16_t Color);
-void Draw_Mine_Positions(void);
-void Count_Neighboring_Mines(void);
-void Display_No_Of_Mines(uint16_t Xpos, uint16_t Ypos, uint8_t no_of_mines, Line_ModeTypdef Mode);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -367,37 +358,6 @@ uint32_t Get_Seed_Value(void)
 	return ret;
 }
 
-//void Update_Time(void)
-//{
-//	static uint8_t seconds = 0, minutes = 0, hours = 0;
-//	uint8_t time_table[6] = "00:00\0";
-//
-//	seconds++;
-//	if (seconds > 59)
-//	{
-//		seconds = 0;
-//		minutes++;
-//		if (minutes > 59)
-//		{
-//			minutes = 0;
-//			hours++;
-//			if (hours > 23)
-//				hours = 0;
-//		}
-//		time_table[1] = 48+minutes%10;
-//		time_table[0] = 48+minutes/10;
-//	}
-//	time_table[4] = 48+seconds%10;
-//	time_table[3] = 48+seconds/10;
-//
-//	display_time(time_table);
-//	second_passed = 0;
-//}
-
-//void display_time(uint8_t* time_table)
-//{
-//	BSP_LCD_DisplayStringAt(270, BSP_LCD_GetYSize()-120, time_table, LEFT_MODE);
-//}
 
 void Move_Up(void)
 {
@@ -421,7 +381,7 @@ void Move_Up(void)
 	if (players_position.y != 0)
 		players_position.y--;
 	else
-		players_position.y = MINEFIELD_SIZE-1;
+		players_position.y = BOARD_SIZE-1;
 
 	// Mark minesweeper's new position:
 	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
@@ -446,7 +406,7 @@ void Move_Down(void)
 	}
 
 	// Move the minesweeper:
-	if (players_position.y != (MINEFIELD_SIZE-1))
+	if (players_position.y != (BOARD_SIZE-1))
 		players_position.y++;
 	else
 		players_position.y = 0;
@@ -477,7 +437,7 @@ void Move_Left(void)
 	if (players_position.x != 0)
 		players_position.x--;
 	else
-		players_position.x = MINEFIELD_SIZE-1;
+		players_position.x = BOARD_SIZE-1;
 
 	// Mark minesweeper's new position:
 	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
@@ -502,7 +462,7 @@ void Move_Right(void)
 	}
 
 	// Move the minesweeper:
-	if (players_position.x != (MINEFIELD_SIZE-1))
+	if (players_position.x != (BOARD_SIZE-1))
 		players_position.x++;
 	else
 		players_position.x = 0;
@@ -601,13 +561,6 @@ void Game_Over(void)
     while (1);
 }
 
-//uint16_t Calculate_Score(void)
-//{
-//	if (game_time < 600)
-//		return (100 - game_time/6)*(100 - game_time/6);
-//	else
-//		return 0;
-//}
 
 void Draw_Square(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint16_t Color)
 {
@@ -620,38 +573,6 @@ void Draw_Square(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint16_t Color)
 		BSP_LCD_DrawHLine(Xpos, Ypos++, Width);
 	}
 	BSP_LCD_SetTextColor(backup_color);
-}
-
-
-
-void Display_No_Of_Mines(uint16_t Xpos, uint16_t Ypos, uint8_t no_of_mines, Line_ModeTypdef Mode)
-{
-	sFONT* current_font_ptr = BSP_LCD_GetFont();
-
-	// display_row and display_col: coordinates (in pixels) where to start displaying the no of mines
-	uint16_t display_col = Xpos, display_row = Ypos;
-
-	display_row += (SQUARE_SIZE - current_font_ptr->Height)/2 - 1;
-	switch (Mode)
-	{
-  		case CENTER_MODE:
-  		{
-  			display_col += (SQUARE_SIZE - current_font_ptr->Width)/2 - 1;
-  			break;
-  		}
-  		case RIGHT_MODE:
-  		{
-  			display_col += SQUARE_SIZE - current_font_ptr->Width - 3;
-  			break;
-  		}
-  		default:
-  		{
-  			break;
-  		}
-	}
-
-    /* Display the number of mines on LCD */
-    BSP_LCD_DisplayChar(display_col, display_row, no_of_mines+48);
 }
 
 /**
