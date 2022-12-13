@@ -35,9 +35,9 @@ typedef struct {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MINEFIELD_SIZE 3
+#define BOARD_SIZE 3
 // Square size in pixels:
-#define SQUARE_SIZE 240/MINEFIELD_SIZE
+#define SQUARE_SIZE 240/BOARD_SIZE
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -48,17 +48,14 @@ typedef struct {
  RTC_HandleTypeDef hrtc;
 
 /* USER CODE BEGIN PV */
-// An array representing a minefield. '0' means area is clear and '1' denotes mines:
-uint8_t minefield[MINEFIELD_SIZE][MINEFIELD_SIZE] = {{0}};
-// An array for storing mine numbers in adjacent fields:
-uint8_t mine_numbers[MINEFIELD_SIZE][MINEFIELD_SIZE] = {{0}};
+// An array representing a gamefield. '0' means area is clear and '1' denotes mines:
+uint8_t gamefield[BOARD_SIZE][BOARD_SIZE] = {{0}};
 // Array 'visited' keeps track of visited fields:
-uint8_t visited[MINEFIELD_SIZE][MINEFIELD_SIZE] = {{0}};
+uint8_t visited[BOARD_SIZE][BOARD_SIZE] = {{0}};
 // 'fields_to_visit' keeps track of the number of fields left to visit:
-uint16_t fields_to_visit = MINEFIELD_SIZE*MINEFIELD_SIZE;
+uint16_t fields_to_visit = BOARD_SIZE*BOARD_SIZE;
 // A variable for storing current minesweeper position:
 Coordinates players_position;
-uint8_t second_passed = 0;
 // A variable for tracking game status. '0' -- game running, '1' -- player 1, '2' -- player 2, '3' -- draw:
 uint8_t game_status = 0;
 uint8_t active_player = 1;
@@ -71,19 +68,13 @@ static void MX_RTC_Init(void);
 int8_t ADC1_Init(void);
 uint32_t Get_Seed_Value(void);
 void Game_Setup(void);
-void Update_Time(void);
-void display_time(uint8_t* time_table);
 void Move_Up(void);
 void Move_Down(void);
 void Move_Left(void);
 void Move_Right(void);
 void Mark_Field(void);
 void Game_Over(void);
-uint16_t Calculate_Score(void);
 void Draw_Square(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint16_t Color);
-void Draw_Mine_Positions(void);
-void Count_Neighboring_Mines(void);
-void Display_No_Of_Mines(uint16_t Xpos, uint16_t Ypos, uint8_t no_of_mines, Line_ModeTypdef Mode);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -229,6 +220,223 @@ int main(void)
   /* USER CODE END 3 */
 }
 
+void Move_Up(void)
+{
+	// Erase the current mark:
+	if (visited[players_position.x][players_position.y] == 1)
+	{
+		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
+//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
+	}
+	else if (visited[players_position.x][players_position.y] == 2)
+		{
+			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
+	//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
+		}
+	else
+	{
+		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_LIGHTGRAY);
+	}
+
+	// Move the minesweeper:
+	if (players_position.y != 0)
+		players_position.y--;
+	else
+		players_position.y = BOARD_SIZE-1;
+
+	// Mark minesweeper's new position:
+	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
+}
+
+void Move_Down(void)
+{
+	// Erase the current mark:
+	if (visited[players_position.x][players_position.y] == 1)
+	{
+		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
+//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
+	}
+	else if (visited[players_position.x][players_position.y] == 2)
+		{
+			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
+	//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
+		}
+	else
+	{
+		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_LIGHTGRAY);
+	}
+
+	// Move the minesweeper:
+	if (players_position.y != (BOARD_SIZE-1))
+		players_position.y++;
+	else
+		players_position.y = 0;
+
+	// Mark minesweeper's new position:
+	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
+}
+
+void Move_Left(void)
+{
+	// Erase the current mark:
+	if (visited[players_position.x][players_position.y] == 1)
+	{
+		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
+//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
+	}
+	else if (visited[players_position.x][players_position.y] == 2)
+		{
+			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
+	//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
+		}
+	else
+	{
+		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_LIGHTGRAY);
+	}
+
+	// Move the minesweeper:
+	if (players_position.x != 0)
+		players_position.x--;
+	else
+		players_position.x = BOARD_SIZE-1;
+
+	// Mark minesweeper's new position:
+	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
+}
+
+void Move_Right(void)
+{
+	// Erase the current mark:
+	if (visited[players_position.x][players_position.y] == 1)
+	{
+		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
+//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
+	}
+	else if (visited[players_position.x][players_position.y] == 2)
+		{
+			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
+	//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
+		}
+	else
+	{
+		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_LIGHTGRAY);
+	}
+
+	// Move the minesweeper:
+	if (players_position.x != (BOARD_SIZE-1))
+		players_position.x++;
+	else
+		players_position.x = 0;
+
+	// Mark minesweeper's new position:
+	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
+}
+
+void Mark_Field(void)
+{
+	// If visited do nothing
+	if (visited[players_position.x][players_position.y] != 0)
+	{
+		return;
+	}
+	// If not, display the player's mark:
+	else
+	{
+		visited[players_position.x][players_position.y] = active_player;
+		fields_to_visit--;
+		if (active_player == 2) {
+			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
+		}else if (active_player == 1) {
+			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
+		}
+	}
+	//check for win
+	Check_Win();
+}
+
+void Check_Win(void)
+{
+
+	if(visited[0][0]==active_player && visited[1][1]==active_player && visited[2][2]==active_player)
+	{
+		game_status = active_player;
+	}
+	else if (visited[0][2]==active_player && visited[1][1]==active_player && visited[2][0]==active_player)
+	{
+		game_status = active_player;
+	}
+	else if (visited[0][0]==active_player && visited[0][1]==active_player && visited[0][2]==active_player)
+	{
+		game_status = active_player;
+	}
+	else if (visited[1][0]==active_player && visited[1][1]==active_player && visited[1][2]==active_player)
+	{
+		game_status = active_player;
+	}
+	else if (visited[2][0]==active_player && visited[2][1]==active_player && visited[2][2]==active_player)
+	{
+		game_status = active_player;
+	}
+	else if (visited[0][0]==active_player && visited[1][0]==active_player && visited[2][0]==active_player)
+	{
+		game_status = active_player;
+	}
+	else if (visited[0][1]==active_player && visited[1][1]==active_player && visited[2][1]==active_player)
+	{
+		game_status = active_player;
+	}
+	else if (visited[2][0]==active_player && visited[2][1]==active_player && visited[2][2]==active_player)
+	{
+		game_status = active_player;
+	}
+
+
+	if (game_status == 0 && fields_to_visit == 0)
+	{
+		game_status = 3;
+	}
+
+
+}
+
+void Game_Over(void)
+{
+
+
+	// Clear the screen to get rid of game artifacts:
+	BSP_LCD_Clear(LCD_COLOR_LIGHTGRAY);
+
+	if (game_status == 1)
+	{
+	    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 95, (uint8_t *)"Player 1 wins.", CENTER_MODE);
+	}
+	if (game_status == 2)
+	{
+	    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 95, (uint8_t *)"Player 2 wins.", CENTER_MODE);
+	}
+	if (game_status == 3)
+	{
+		BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 95, (uint8_t *)"Draw", CENTER_MODE);
+	}
+    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 80, (uint8_t *)"To play again press 'Reset'.", CENTER_MODE);
+    while (1);
+}
+
+
+void Draw_Square(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint16_t Color)
+{
+	uint16_t Height = Width;
+	uint16_t backup_color = BSP_LCD_GetTextColor();
+
+	BSP_LCD_SetTextColor(Color);
+	while(Height--)
+	{
+		BSP_LCD_DrawHLine(Xpos, Ypos++, Width);
+	}
+	BSP_LCD_SetTextColor(backup_color);
+}
+
+
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -367,316 +575,6 @@ uint32_t Get_Seed_Value(void)
 	return ret;
 }
 
-//void Update_Time(void)
-//{
-//	static uint8_t seconds = 0, minutes = 0, hours = 0;
-//	uint8_t time_table[6] = "00:00\0";
-//
-//	seconds++;
-//	if (seconds > 59)
-//	{
-//		seconds = 0;
-//		minutes++;
-//		if (minutes > 59)
-//		{
-//			minutes = 0;
-//			hours++;
-//			if (hours > 23)
-//				hours = 0;
-//		}
-//		time_table[1] = 48+minutes%10;
-//		time_table[0] = 48+minutes/10;
-//	}
-//	time_table[4] = 48+seconds%10;
-//	time_table[3] = 48+seconds/10;
-//
-//	display_time(time_table);
-//	second_passed = 0;
-//}
-
-//void display_time(uint8_t* time_table)
-//{
-//	BSP_LCD_DisplayStringAt(270, BSP_LCD_GetYSize()-120, time_table, LEFT_MODE);
-//}
-
-void Move_Up(void)
-{
-	// Erase the current mark:
-	if (visited[players_position.x][players_position.y] == 1)
-	{
-		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
-//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
-	}
-	else if (visited[players_position.x][players_position.y] == 2)
-		{
-			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
-	//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
-		}
-	else
-	{
-		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_LIGHTGRAY);
-	}
-
-	// Move the minesweeper:
-	if (players_position.y != 0)
-		players_position.y--;
-	else
-		players_position.y = MINEFIELD_SIZE-1;
-
-	// Mark minesweeper's new position:
-	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
-}
-
-void Move_Down(void)
-{
-	// Erase the current mark:
-	if (visited[players_position.x][players_position.y] == 1)
-	{
-		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
-//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
-	}
-	else if (visited[players_position.x][players_position.y] == 2)
-		{
-			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
-	//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
-		}
-	else
-	{
-		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_LIGHTGRAY);
-	}
-
-	// Move the minesweeper:
-	if (players_position.y != (MINEFIELD_SIZE-1))
-		players_position.y++;
-	else
-		players_position.y = 0;
-
-	// Mark minesweeper's new position:
-	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
-}
-
-void Move_Left(void)
-{
-	// Erase the current mark:
-	if (visited[players_position.x][players_position.y] == 1)
-	{
-		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
-//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
-	}
-	else if (visited[players_position.x][players_position.y] == 2)
-		{
-			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
-	//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
-		}
-	else
-	{
-		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_LIGHTGRAY);
-	}
-
-	// Move the minesweeper:
-	if (players_position.x != 0)
-		players_position.x--;
-	else
-		players_position.x = MINEFIELD_SIZE-1;
-
-	// Mark minesweeper's new position:
-	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
-}
-
-void Move_Right(void)
-{
-	// Erase the current mark:
-	if (visited[players_position.x][players_position.y] == 1)
-	{
-		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
-//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
-	}
-	else if (visited[players_position.x][players_position.y] == 2)
-		{
-			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
-	//		Display_No_Of_Mines(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, mine_numbers[players_position.x][players_position.y], CENTER_MODE);
-		}
-	else
-	{
-		Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_LIGHTGRAY);
-	}
-
-	// Move the minesweeper:
-	if (players_position.x != (MINEFIELD_SIZE-1))
-		players_position.x++;
-	else
-		players_position.x = 0;
-
-	// Mark minesweeper's new position:
-	Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGRAY);
-}
-
-void Mark_Field(void)
-{
-	// If visited do nothing
-	if (visited[players_position.x][players_position.y] != 0)
-	{
-		return;
-	}
-	// If not, display the player's mark:
-	else
-	{
-		visited[players_position.x][players_position.y] = active_player;
-		fields_to_visit--;
-		if (active_player == 2) {
-			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_DARKGREEN);
-		}else if (active_player == 1) {
-			Draw_Square(players_position.x*SQUARE_SIZE+1, players_position.y*SQUARE_SIZE+1, SQUARE_SIZE-1, LCD_COLOR_RED);
-		}
-	}
-	//check for win
-	Check_Win();
-}
-
-void Check_Win(void)
-{
-
-	if(visited[0][0]==active_player && visited[1][1]==active_player && visited[2][2]==active_player)
-	{
-		game_status = active_player;
-	}
-	else if (visited[0][2]==active_player && visited[1][1]==active_player && visited[2][0]==active_player)
-	{
-		game_status = active_player;
-	}
-	else if (visited[0][0]==active_player && visited[0][1]==active_player && visited[0][2]==active_player)
-	{
-		game_status = active_player;
-	}
-	else if (visited[1][0]==active_player && visited[1][1]==active_player && visited[1][2]==active_player)
-	{
-		game_status = active_player;
-	}
-	else if (visited[2][0]==active_player && visited[2][1]==active_player && visited[2][2]==active_player)
-	{
-		game_status = active_player;
-	}
-	else if (visited[0][0]==active_player && visited[1][0]==active_player && visited[2][0]==active_player)
-	{
-		game_status = active_player;
-	}
-	else if (visited[1][0]==active_player && visited[1][1]==active_player && visited[1][2]==active_player)
-	{
-		game_status = active_player;
-	}
-	else if (visited[2][0]==active_player && visited[2][1]==active_player && visited[2][2]==active_player)
-	{
-		game_status = active_player;
-	}
-
-
-	if (game_status == 0 && fields_to_visit == 0)
-	{
-		game_status = 3;
-	}
-
-
-}
-
-void Game_Over(void)
-{
-
-
-	// Clear the screen to get rid of game artifacts:
-	BSP_LCD_Clear(LCD_COLOR_LIGHTGRAY);
-
-	if (game_status == 1)
-	{
-	    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 95, (uint8_t *)"Player 1 wins.", CENTER_MODE);
-	}
-	if (game_status == 2)
-	{
-	    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 95, (uint8_t *)"Player 2 wins.", CENTER_MODE);
-	}
-	if (game_status == 3)
-	{
-		BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 95, (uint8_t *)"Draw", CENTER_MODE);
-	}
-    BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize()- 80, (uint8_t *)"To play again press 'Reset'.", CENTER_MODE);
-    while (1);
-}
-
-//uint16_t Calculate_Score(void)
-//{
-//	if (game_time < 600)
-//		return (100 - game_time/6)*(100 - game_time/6);
-//	else
-//		return 0;
-//}
-
-void Draw_Square(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint16_t Color)
-{
-	uint16_t Height = Width;
-	uint16_t backup_color = BSP_LCD_GetTextColor();
-
-	BSP_LCD_SetTextColor(Color);
-	while(Height--)
-	{
-		BSP_LCD_DrawHLine(Xpos, Ypos++, Width);
-	}
-	BSP_LCD_SetTextColor(backup_color);
-}
-
-
-
-void Display_No_Of_Mines(uint16_t Xpos, uint16_t Ypos, uint8_t no_of_mines, Line_ModeTypdef Mode)
-{
-	sFONT* current_font_ptr = BSP_LCD_GetFont();
-
-	// display_row and display_col: coordinates (in pixels) where to start displaying the no of mines
-	uint16_t display_col = Xpos, display_row = Ypos;
-
-	display_row += (SQUARE_SIZE - current_font_ptr->Height)/2 - 1;
-	switch (Mode)
-	{
-  		case CENTER_MODE:
-  		{
-  			display_col += (SQUARE_SIZE - current_font_ptr->Width)/2 - 1;
-  			break;
-  		}
-  		case RIGHT_MODE:
-  		{
-  			display_col += SQUARE_SIZE - current_font_ptr->Width - 3;
-  			break;
-  		}
-  		default:
-  		{
-  			break;
-  		}
-	}
-
-    /* Display the number of mines on LCD */
-    BSP_LCD_DisplayChar(display_col, display_row, no_of_mines+48);
-}
-
-/**
-  * @brief Toggle Leds
-  * @param  None
-  * @retval None
-  */
-/*
-void Toggle_Leds(void)
-{
-  static uint8_t ticks = 0;
-  
-  if(ticks++ > 100)
-  {
-    // BSP_LED_Toggle(LED_BLUE);
-    ticks = 0;
-  }
-}
-*/
-/* USER CODE END 4 */
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -690,13 +588,7 @@ void Error_Handler(void)
 }
 
 #ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
